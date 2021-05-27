@@ -1,0 +1,29 @@
+{
+    "name": "nocartorio/array-validation-by-json",
+    "description": "Array validation by JSON file with rules for Laravel",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Douglas Resende Maciel",
+            "email": "douglas@nocartorio.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "laravel/framework": "^6.0",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "NoCartorio\\ArrayValidationByJson\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NoCartorio\\ArrayValidationByJson\\ValidatorServiceProvider"
+            ]
+        }
+    }
+}
