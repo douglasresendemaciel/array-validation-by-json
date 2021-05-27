@@ -95,7 +95,11 @@ class Validator
                     $file = $validators['file'];
 
                     if (isset($this->base[$file]) && is_array($this->base[$file])) {
-                        return self::validateItems($itemValue, $this->base[$file]);
+                        $resultFile = self::validateItems($itemValue, $this->base[$file]);
+
+                        if(!$resultFile){
+                            return false;
+                        }
                     }
 
                     return false;
