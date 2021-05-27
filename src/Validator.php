@@ -97,16 +97,16 @@ class Validator
                     if (isset($this->base[$file]) && is_array($this->base[$file])) {
                         $resultFile = self::validateItems($itemValue, $this->base[$file]);
 
-                        if(!$resultFile){
+                        if (!$resultFile) {
                             return false;
                         }
                     }
 
                     return false;
                 }
+            } else {
+                return false;
             }
-
-            return false;
         }
 
         return true;
