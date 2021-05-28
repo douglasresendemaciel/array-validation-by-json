@@ -18,9 +18,9 @@ class Validator
     /**
      * ExportJsonValidation constructor.
      */
-    public function __construct()
+    public function __construct(string $validatorKey)
     {
-        $this->base = $this->getValidatorData();
+        $this->base = $this->getValidatorData($validatorKey);
     }
 
     /**
@@ -66,8 +66,7 @@ class Validator
                 $couldBeDatetime = array_key_exists('datetime', $validators);
                 $couldBeText = array_key_exists('text', $validators);
                 $isFile = array_key_exists('file', $validators);
-
-
+                
                 if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
                     $isNumeric = is_numeric($itemValue);
                     if ($isNumeric) {
@@ -154,19 +153,20 @@ class Validator
      * @param string $format
      * @return bool
      */
-    private function validateDate($date, $format = 'Y-m-d')
+    private function validateDate($date, $format = 'Y-m-d'): bool
     {
         $d = DateTime::createFromFormat($format, $date);
         return $d && $d->format($format) === $date;
     }
 
     /**
+     * @param string $validatorKey
      * @return array
      */
-    private function getValidatorData(): array
+    private function getValidatorData(string $validatorKey): array
     {
         $validationData = [];
-        $files = config('nocartorio-validate-rules-json');
+        $files = config('nocartorio-validate-rules-json.' . $validatorKey);
 
         foreach ($files as $key => $fileURL) {
             $content = file_get_contents($fileURL);
