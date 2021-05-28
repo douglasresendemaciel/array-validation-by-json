@@ -110,6 +110,7 @@ class Validator
                                     return false;
                                 }
                             }
+                            continue;
                         } else {
                             $resultFile = $this->validateItems($itemValue, $fileBaseValidation);
 
