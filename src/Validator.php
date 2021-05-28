@@ -40,9 +40,9 @@ class Validator
     private function validateItems(array $items, array $baseValidator): bool
     {
         foreach ($baseValidator as $key => $value) {
-            $keyValidation = self::checkKey($key, $items);
+            $keyValidation = $this->checkKey($key, $items);
             if ($keyValidation) {
-                $validators = self::getValidators($value);
+                $validators = $this->getValidators($value);
                 $itemValue = $items[$key];
 
                 $valueType = gettype($itemValue);
@@ -54,8 +54,9 @@ class Validator
                 }
 
                 $isValueTypeAllowed = array_key_exists($valueType, $validators);
+                $isFile = array_key_exists('file', $validators);
 
-                if ($isValueTypeAllowed) {
+                if ($isValueTypeAllowed && !$isFile) {
                     continue;
                 }
 
@@ -65,8 +66,7 @@ class Validator
                 $couldBeDate = array_key_exists('date', $validators);
                 $couldBeDatetime = array_key_exists('datetime', $validators);
                 $couldBeText = array_key_exists('text', $validators);
-                $isFile = array_key_exists('file', $validators);
-                
+
                 if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
                     $isNumeric = is_numeric($itemValue);
                     if ($isNumeric) {
@@ -100,10 +100,22 @@ class Validator
 
                     if (isset($this->base[$file]) && is_array($this->base[$file])) {
                         $fileBaseValidation = $this->base[$file];
-                        $resultFile = self::validateItems($itemValue, $fileBaseValidation);
+                        $isArray = array_key_exists('array', $validators);
 
-                        if ($resultFile) {
-                            continue;
+                        if ($isArray) {
+                            foreach ($itemValue as $item) {
+                                $resultFile = $this->validateItems($item, $fileBaseValidation);
+
+                                if (!$resultFile) {
+                                    return false;
+                                }
+                            }
+                        } else {
+                            $resultFile = $this->validateItems($itemValue, $fileBaseValidation);
+
+                            if ($resultFile) {
+                                continue;
+                            }
                         }
                     }
                 }
