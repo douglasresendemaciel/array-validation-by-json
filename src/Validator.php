@@ -3,7 +3,6 @@
 namespace NoCartorio\ArrayValidationByJson;
 
 use DateTime;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class Validator
@@ -46,15 +45,9 @@ class Validator
                 $validators = self::getValidators($value);
                 $itemValue = $items[$key];
 
-                $couldBeNullable = array_key_exists('nullable', $validators);
-                $couldBeInteger = array_key_exists('integer', $validators);
-                $couldBeDouble = array_key_exists('double', $validators);
-                $couldBeFloat = array_key_exists('float', $validators);
-                $couldBeDate = array_key_exists('date', $validators);
-                $couldBeDatetime = array_key_exists('datetime', $validators);
-
                 $valueType = gettype($itemValue);
                 $hasNoContent = empty($itemValue);
+                $couldBeNullable = array_key_exists('nullable', $validators);
 
                 if ($hasNoContent && $couldBeNullable) {
                     continue;
@@ -62,53 +55,63 @@ class Validator
 
                 $isValueTypeAllowed = array_key_exists($valueType, $validators);
 
-                if (!$isValueTypeAllowed) {
-
-                    if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
-                        $isNumeric = is_numeric($itemValue);
-                        if (!$isNumeric) {
-                            Log::error("O item {$key} possui valor do tipo {$valueType} e este tipo não é permitido");
-                            return false;
-                        }
-                    }
-
-                    if ($couldBeDate) {
-                        $isDate = $this->validateDate($itemValue, 'Y-m-d');
-                        if (!$isDate) {
-                            Log::error("O item {$key} possui valor do tipo {$valueType} e este tipo não é permitido");
-                            return false;
-                        }
-                    }
-
-                    if ($couldBeDatetime) {
-                        $isDate = $this->validateDate($itemValue, 'Y-m-d H:i:s');
-                        if (!$isDate) {
-                            Log::error("O item {$key} possui valor do tipo {$valueType} e este tipo não é permitido");
-                            return false;
-                        }
-                    }
-
+                if ($isValueTypeAllowed) {
+                    continue;
                 }
 
+                $couldBeInteger = array_key_exists('integer', $validators);
+                $couldBeDouble = array_key_exists('double', $validators);
+                $couldBeFloat = array_key_exists('float', $validators);
+                $couldBeDate = array_key_exists('date', $validators);
+                $couldBeDatetime = array_key_exists('datetime', $validators);
+                $couldBeText = array_key_exists('text', $validators);
                 $isFile = array_key_exists('file', $validators);
+
+
+                if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
+                    $isNumeric = is_numeric($itemValue);
+                    if ($isNumeric) {
+                        continue;
+                    }
+                }
+
+                if ($couldBeDate) {
+                    $isDate = $this->validateDate($itemValue, 'Y-m-d');
+                    if ($isDate) {
+                        continue;
+                    }
+                }
+
+                if ($couldBeDatetime) {
+                    $isDate = $this->validateDate($itemValue, 'Y-m-d H:i:s');
+                    if ($isDate) {
+                        continue;
+                    }
+                }
+
+                if ($couldBeText) {
+                    $isString = is_string($itemValue);
+                    if ($isString) {
+                        continue;
+                    }
+                }
+
                 if ($isFile) {
                     $file = $validators['file'];
 
                     if (isset($this->base[$file]) && is_array($this->base[$file])) {
-                        $resultFile = self::validateItems($itemValue, $this->base[$file]);
+                        $fileBaseValidation = $this->base[$file];
+                        $resultFile = self::validateItems($itemValue, $fileBaseValidation);
 
-                        if (!$resultFile) {
-                            return false;
+                        if ($resultFile) {
+                            continue;
                         }
                     }
-
-                    return false;
                 }
-            } else {
                 return false;
             }
+            return false;
         }
-
         return true;
     }
 
@@ -119,11 +122,9 @@ class Validator
      */
     private function checkKey($key, $items): bool
     {
-        if (isset($items[$key])) {
+        if (array_key_exists($key, $items)) {
             return true;
         }
-
-        Log::error('O array a ser validado não possui a chave ' . $key);
 
         return false;
     }
