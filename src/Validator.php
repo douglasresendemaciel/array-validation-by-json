@@ -13,7 +13,9 @@ class Validator
     /**
      * @var mixed
      */
-    private $base = [];
+    protected $base = [];
+
+    protected $errors = [];
 
     /**
      * ExportJsonValidation constructor.
@@ -21,6 +23,11 @@ class Validator
     public function __construct(string $validatorKey)
     {
         $this->base = $this->getValidatorData($validatorKey);
+    }
+
+    public function getErrors()
+    {
+        return $this->errors;
     }
 
     /**
@@ -41,89 +48,100 @@ class Validator
     {
         foreach ($baseValidator as $key => $value) {
             $keyValidation = $this->checkKey($key, $items);
-            if ($keyValidation) {
-                $validators = $this->getValidators($value);
-                $itemValue = $items[$key];
 
-                $valueType = gettype($itemValue);
-                $hasNoContent = empty($itemValue);
-                $couldBeNullable = array_key_exists('nullable', $validators);
-
-                if ($hasNoContent && $couldBeNullable) {
-                    continue;
-                }
-
-                $isValueTypeAllowed = array_key_exists($valueType, $validators);
-                $isFile = array_key_exists('file', $validators);
-
-                if ($isValueTypeAllowed && !$isFile) {
-                    continue;
-                }
-
-                $couldBeInteger = array_key_exists('integer', $validators);
-                $couldBeDouble = array_key_exists('double', $validators);
-                $couldBeFloat = array_key_exists('float', $validators);
-                $couldBeDate = array_key_exists('date', $validators);
-                $couldBeDatetime = array_key_exists('datetime', $validators);
-                $couldBeText = array_key_exists('text', $validators);
-
-                if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
-                    $isNumeric = is_numeric($itemValue);
-                    if ($isNumeric) {
-                        continue;
-                    }
-                }
-
-                if ($couldBeDate) {
-                    $isDate = $this->validateDate($itemValue, 'Y-m-d');
-                    if ($isDate) {
-                        continue;
-                    }
-                }
-
-                if ($couldBeDatetime) {
-                    $isDate = $this->validateDate($itemValue, 'Y-m-d H:i:s');
-                    if ($isDate) {
-                        continue;
-                    }
-                }
-
-                if ($couldBeText) {
-                    $isString = is_string($itemValue);
-                    if ($isString) {
-                        continue;
-                    }
-                }
-
-                if ($isFile) {
-                    $file = $validators['file'];
-
-                    if (isset($this->base[$file]) && is_array($this->base[$file])) {
-                        $fileBaseValidation = $this->base[$file];
-                        $isArray = array_key_exists('array', $validators);
-
-                        if ($isArray) {
-                            foreach ($itemValue as $item) {
-                                $resultFile = $this->validateItems($item, $fileBaseValidation);
-
-                                if (!$resultFile) {
-                                    return false;
-                                }
-                            }
-                            continue;
-                        } else {
-                            $resultFile = $this->validateItems($itemValue, $fileBaseValidation);
-
-                            if ($resultFile) {
-                                continue;
-                            }
-                        }
-                    }
-                }
+            if (!$keyValidation) {
+                $this->errors[] = "Section '$key' not found!";
                 return false;
             }
+
+            $validators = $this->getValidators($value);
+            $itemValue = $items[$key];
+
+            $valueType = gettype($itemValue);
+            $hasNoContent = empty($itemValue);
+            $couldBeNullable = array_key_exists('nullable', $validators);
+
+            if ($hasNoContent && $couldBeNullable) {
+                continue;
+            }
+
+            $isValueTypeAllowed = array_key_exists($valueType, $validators);
+            $isFile = array_key_exists('file', $validators);
+
+            if ($isValueTypeAllowed && !$isFile) {
+                continue;
+            }
+
+            $couldBeInteger = array_key_exists('integer', $validators);
+            $couldBeDouble = array_key_exists('double', $validators);
+            $couldBeFloat = array_key_exists('float', $validators);
+            $couldBeDate = array_key_exists('date', $validators);
+            $couldBeDatetime = array_key_exists('datetime', $validators);
+            $couldBeText = array_key_exists('text', $validators);
+
+            if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
+                $isNumeric = is_numeric($itemValue);
+                if ($isNumeric) {
+                    continue;
+                }
+            }
+
+            if ($couldBeDate) {
+                $isDate = $this->validateDate($itemValue, 'Y-m-d');
+                if ($isDate) {
+                    continue;
+                }
+            }
+
+            if ($couldBeDatetime) {
+                $isDate = $this->validateDate($itemValue, 'Y-m-d H:i:s');
+                if ($isDate) {
+                    continue;
+                }
+            }
+
+            if ($couldBeText) {
+                $isString = is_string($itemValue);
+                if ($isString) {
+                    continue;
+                }
+            }
+
+            if ($isFile) {
+                $file = $validators['file'];
+
+                if (isset($this->base[$file]) && is_array($this->base[$file])) {
+                    $fileBaseValidation = $this->base[$file];
+                    $isArray = array_key_exists('array', $validators);
+
+                    if ($isArray) {
+                        foreach ($itemValue as $item) {
+                            $resultFile = $this->validateItems($item, $fileBaseValidation);
+
+                            if (!$resultFile) {
+                                return false;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    $resultFile = $this->validateItems($itemValue, $fileBaseValidation);
+
+                    if ($resultFile) {
+                        continue;
+                    }
+                }
+            }
+
+            if (!is_string($itemValue)) {
+                $itemValue = json_encode($itemValue);
+            }
+
+            $this->errors[] = "Validation failed for field '$key' with value '$itemValue'";
             return false;
         }
+
         return true;
     }
 
