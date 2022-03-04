@@ -3,6 +3,7 @@
 namespace NoCartorio\ArrayValidationByJson;
 
 use DateTime;
+use RuntimeException;
 
 /**
  * Class Validator
@@ -13,16 +14,24 @@ class Validator
     /**
      * @var mixed
      */
-    protected $base = [];
+    protected $rules = [];
 
     protected $errors = [];
+
+    protected $mainRule;
 
     /**
      * ExportJsonValidation constructor.
      */
-    public function __construct(string $validatorKey)
+    public function __construct(string $ruleset, $mainRule = 'base')
     {
-        $this->base = $this->getValidatorData($validatorKey);
+        $this->mainRule = $mainRule;
+        $this->rules = $this->loadRuleset($ruleset);
+    }
+
+    protected function prepareRun()
+    {
+        $this->errors = [];
     }
 
     public function getErrors()
@@ -36,7 +45,9 @@ class Validator
      */
     public function validate(array $items): bool
     {
-        return $this->validateItems($items, $this->base['base']);
+        $this->prepareRun();
+
+        return $this->validateItems($items, $this->rules[$this->mainRule]);
     }
 
     /**
@@ -110,8 +121,8 @@ class Validator
             if ($isFile) {
                 $file = $validators['file'];
 
-                if (isset($this->base[$file]) && is_array($this->base[$file])) {
-                    $fileBaseValidation = $this->base[$file];
+                if (isset($this->rules[$file]) && is_array($this->rules[$file])) {
+                    $fileBaseValidation = $this->rules[$file];
                     $isArray = array_key_exists('array', $validators);
 
                     if ($isArray) {
@@ -191,17 +202,25 @@ class Validator
     }
 
     /**
-     * @param string $validatorKey
+     * @param string $ruleset
      * @return array
      */
-    private function getValidatorData(string $validatorKey): array
+    private function loadRuleset(string $ruleset): array
     {
         $validationData = [];
-        $files = config('nocartorio-validate-rules-json.' . $validatorKey);
+        $files = config('nocartorio-validate-rules-json.' . $ruleset);
+
+        if (!$files) {
+            throw new RuntimeException("There are no ruleset files to load for '$ruleset'!");
+        }
 
         foreach ($files as $key => $fileURL) {
             $content = file_get_contents($fileURL);
             $validationData[$key] = json_decode($content, true);
+
+            if (json_last_error()) {
+                throw new RuntimeException("Failed to decode json data '{$content}' with error " . json_last_error_msg());
+            }
         }
 
         return $validationData;
