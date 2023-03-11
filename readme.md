@@ -38,10 +38,10 @@ php artisan vendor:publish
 
 ## Usage
 
-All allowed books for validation is: 'real-indicator', 'general-registry', 'general-registry'
+All allowed arrays for validation is: 'array-1', 'array-2', 'array-3'
 
 ``` php
-$validated = new \NoCartorio\ArrayValidationByJson\Validator('real-indicator');
+$validated = new \NoCartorio\ArrayValidationByJson\Validator('array-1');
 ```
 $validated could be true or false
 
