@@ -3,6 +3,7 @@
 namespace NoCartorio\ArrayValidationByJson;
 
 use DateTime;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 /**
@@ -209,13 +210,29 @@ class Validator
     {
         $validationData = [];
         $files = config('nocartorio-validate-rules-json.' . $ruleset);
+        $cacheTime = config('nocartorio-validate-rules-json.cache-time', 360);
 
         if (!$files) {
             throw new RuntimeException("There are no ruleset files to load for '$ruleset'!");
         }
 
         foreach ($files as $key => $fileURL) {
-            $content = file_get_contents($fileURL);
+            $content = Cache::remember($ruleset . '.' . $key, $cacheTime, function () use ($fileURL) {
+                if (strpos($fileURL, "http://") !== false || strpos($fileURL, "https://") !== false) {
+                    $curlSession = curl_init();
+                    curl_setopt($curlSession, CURLOPT_URL, $fileURL);
+                    curl_setopt($curlSession, CURLOPT_BINARYTRANSFER, true);
+                    curl_setopt($curlSession, CURLOPT_RETURNTRANSFER, true);
+
+                    $value = curl_exec($curlSession);
+                    curl_close($curlSession);
+                } else {
+                    $value = file_get_contents($fileURL);
+                }
+
+                return $value;
+            });
+
             $validationData[$key] = json_decode($content, true);
 
             if (json_last_error()) {
