@@ -90,6 +90,7 @@ class Validator
             $couldBeDate = array_key_exists('date', $validators);
             $couldBeDatetime = array_key_exists('datetime', $validators);
             $couldBeText = array_key_exists('text', $validators);
+            $couldBeBool = array_key_exists('bool', $validators);
 
             if ($couldBeInteger || $couldBeDouble || $couldBeFloat) {
                 $isNumeric = is_numeric($itemValue);
@@ -118,6 +119,13 @@ class Validator
                     continue;
                 }
             }
+
+            if ($couldBeBool) {
+                    $isBool = is_bool($itemValue);
+                    if ($isBool) {
+                        continue;
+                    }
+                }
 
             if ($isFile) {
                 $file = $validators['file'];
